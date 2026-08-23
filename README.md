@@ -1,66 +1,70 @@
-# Efficient Fine-Tuning of ViT on Food-101
+# ViT Fine-Tuning on Food-101
 
-Comparing **LoRA** and **Linear Probing** for efficient adaptation of a pretrained Vision Transformer (ViT) on the Food-101 image classification dataset.
+Comparing parameter-efficient fine-tuning strategies for adapting a pretrained **Vision Transformer (ViT)** to Food-101 image classification.
 
-## Overview
+## Setup
 
 - **Dataset:** Food-101
 - **Classes:** 101
+- **Train:** 60,600 images
+- **Validation:** 15,150 images
 - **Model:** `google/vit-base-patch16-224`
-- **Methods:** LoRA, Linear Probing
-- **Framework:** PyTorch, Hugging Face Transformers, PEFT
+- **Image Size:** 224 × 224
 - **Training:** 5 epochs
-- **GPU:** NVIDIA T4
+- **Framework:** PyTorch, Hugging Face Transformers, PEFT
 
-## LoRA
+## Methods
 
-LoRA freezes the pretrained ViT weights and introduces small trainable low-rank matrices into selected attention layers:
+### Linear Probing
+The ViT backbone is frozen and only the classification head is trained.
 
-\[
-W' = W + BA
-\]
+- **Trainable Parameters:** 77,669
+- **Trainable:** 0.0904%
 
-LoRA was applied to the **query (`q_proj`) and value (`v_proj`) projections** of the self-attention layers.
+### LoRA
+LoRA adapters are applied to the query and value projections (`q_proj`, `v_proj`) of the ViT attention layers.
 
-### LoRA Configuration
+- **Rank:** 8
+- **Alpha:** 16
+- **Dropout:** 0.1
+- **Trainable Parameters:** 372,581
+- **Trainable:** 0.4320%
 
-```python
-LoraConfig(
-    r=8,
-    lora_alpha=16,
-    target_modules=["q_proj", "v_proj"],
-    lora_dropout=0.1,
-    bias="none",
-    modules_to_save=["classifier"],
-)
-```
+### Full Fine-Tuning
+All ViT parameters are trained.
 
-- **Trainable parameters:** 372,581
-- **Trainable percentage:** 0.43%
-
-## Linear Probing
-
-For linear probing, the entire pretrained ViT backbone is frozen and only the final 101-class classification head is trained.
-
-- **Trainable parameters:** 77,669
-- **Trainable percentage:** 0.09%
+- **Trainable Parameters:** 85,876,325
+- **Trainable:** 100%
+- **Status:** Planned
 
 ## Results
 
 | Method | Trainable Params | Trainable % | Validation Accuracy |
 |---|---:|---:|---:|
-| Linear Probing | 77,669 | 0.09% | TBD |
-| LoRA | 372,581 | 0.43% | **85.35%** |
+| Linear Probing | 77,669 | 0.0904% | **81.82%** |
+| LoRA | 372,581 | 0.4320% | **85.35%** |
+| Full Fine-Tuning | 85,876,325 | 100% | TBD |
 
-### LoRA Training
+LoRA improves validation accuracy by **3.53 percentage points** over linear probing while training only **0.43%** of the model parameters.
 
-| Epoch | Train Loss | Val Loss | Accuracy |
-|---:|---:|---:|---:|
-| 1 | 0.8345 | 0.6525 | 82.48% |
-| 2 | 0.7218 | 0.5972 | 83.99% |
-| 3 | 0.6201 | 0.5724 | 84.68% |
-| 4 | 0.5604 | 0.5585 | 85.16% |
-| 5 | 0.4950 | 0.5500 | **85.35%** |
+## Project Structure
+
+```text
+notebooks/
+├── 01_data_exploration.ipynb
+├── 02_linear_probing.ipynb
+├── 03_lora_finetuning.ipynb
+├── 04_full_finetuning.ipynb
+└── 05_model_comparison.ipynb
+```
+
+## Planned Analysis
+
+- Training and validation curves
+- Accuracy vs. parameter efficiency
+- Training runtime comparison
+- Error analysis
+- Grad-CAM explainability
 
 ## Tech Stack
 
